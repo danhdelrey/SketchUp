@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,7 +54,6 @@ fun ColorPicker(
             .size(40.dp)
             .clip(CircleShape)
             .background(currentColor)
-            .border(2.dp, Color.LightGray, CircleShape)
             .clickable { showDialog = true }
     )
 
@@ -135,7 +135,7 @@ private fun GradientColorPickerDialog(
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("Hủy")
             }
         }
