@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -157,7 +159,10 @@ fun ColorPicker(selectedColor: Color, onColorSelected: (Color) -> Unit) {
             Button(
                 onClick = { onColorSelected(color) },
                 modifier = Modifier.size(40.dp),
-                border = if (color == selectedColor) BorderStroke(2.dp, Color.Gray) else null
+                border = if (color == selectedColor) BorderStroke(2.dp, Color.Gray) else null,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = color
+                )
             ) {}
         }
     }
