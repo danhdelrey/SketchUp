@@ -54,6 +54,7 @@ fun ColorPicker(
             .size(40.dp)
             .clip(CircleShape)
             .background(currentColor)
+            .border(width = 2.dp, color = Color.Gray, shape = CircleShape)
             .clickable { showDialog = true }
     )
 
