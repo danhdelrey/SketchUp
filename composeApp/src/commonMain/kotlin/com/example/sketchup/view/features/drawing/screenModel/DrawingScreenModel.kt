@@ -63,6 +63,7 @@ class DrawingScreenModel(
             is DrawingEvent.Undo -> repository.undo()
             is DrawingEvent.Redo -> repository.redo()
             is DrawingEvent.PickColor -> _currentColor.update { event.color }
+            is DrawingEvent.ChangeBrushSize -> _currentWidth.update { event.size }
             is DrawingEvent.SavePng -> saveImage(event.bitmap)
         }
     }

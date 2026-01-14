@@ -11,5 +11,6 @@ sealed interface DrawingEvent {
     data object Undo : DrawingEvent
     data object Redo : DrawingEvent
     data class PickColor(val color: Color) : DrawingEvent
+    data class ChangeBrushSize(val size: Float) : DrawingEvent
     data class SavePng(val bitmap: ImageBitmap) : DrawingEvent
 }

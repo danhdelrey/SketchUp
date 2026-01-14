@@ -5,9 +5,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -35,6 +37,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import com.example.sketchup.data.model.DrawingPath
 import com.example.sketchup.view.common.component.CustomIconButton
+import com.example.sketchup.view.features.drawing.component.BrushSizePicker
 import com.example.sketchup.view.features.drawing.event.DrawingEvent
 import com.example.sketchup.view.features.drawing.screenModel.DrawingScreenModel
 
@@ -86,13 +89,32 @@ class DrawingScreen : Screen {
                         drawPathCompat(path)
                     }
                 }
-                ColorPicker(
+
+                // Color and Brush Size Pickers at bottom left
+                Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(10.dp)
-                ) { color ->
-                    screenModel.onEvent(DrawingEvent.PickColor(color)) }
+                ) {
+                    ColorPicker(
+                        initialColor = state.selectedColor,
+                        onColorSelected = { color ->
+                            screenModel.onEvent(DrawingEvent.PickColor(color))
+                        }
+                    )
 
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    BrushSizePicker(
+                        currentSize = state.brushSize,
+                        currentColor = state.selectedColor,
+                        onSizeSelected = { size ->
+                            screenModel.onEvent(DrawingEvent.ChangeBrushSize(size))
+                        }
+                    )
+                }
+
+                // Undo/Redo buttons at top right
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)

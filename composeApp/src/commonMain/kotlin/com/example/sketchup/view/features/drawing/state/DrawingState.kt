@@ -6,5 +6,6 @@ import com.example.sketchup.data.model.DrawingPath
 data class DrawingState(
     val paths: List<DrawingPath> = emptyList(),
     val currentDrawingPath: DrawingPath? = null,
-    val selectedColor: Color = Color.Black
+    val selectedColor: Color = Color.Black,
+    val brushSize: Float = 10f
 )
