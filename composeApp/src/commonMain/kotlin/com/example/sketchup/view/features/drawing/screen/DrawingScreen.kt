@@ -25,20 +25,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
-import com.example.sketchup.data.model.DrawingPath
 import com.example.sketchup.view.common.component.CustomIconButton
 import com.example.sketchup.view.features.drawing.component.BrushSizePicker
 import com.example.sketchup.view.features.drawing.event.DrawingEvent
+import com.example.sketchup.view.features.drawing.helper.drawPathCompat
 import com.example.sketchup.view.features.drawing.screenModel.DrawingScreenModel
 
 class DrawingScreen : Screen {
@@ -137,32 +133,5 @@ class DrawingScreen : Screen {
         }
     }
 
-    // Extension function để vẽ DrawingPath lên Canvas
-    private fun DrawScope.drawPathCompat(drawingPath: DrawingPath) {
-        if (drawingPath.points.size > 1) {
-            val path = androidx.compose.ui.graphics.Path().apply {
-                moveTo(drawingPath.points.first().x, drawingPath.points.first().y)
-                for (i in 1 until drawingPath.points.size) {
-                    lineTo(drawingPath.points[i].x, drawingPath.points[i].y)
-                }
-            }
-            drawPath(
-                path = path,
-                color = drawingPath.color,
-                style = Stroke(
-                    width = drawingPath.strokeWidth,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
-            )
-        } else if (drawingPath.points.size == 1) {
-            drawPoints(
-                points = drawingPath.points,
-                pointMode = androidx.compose.ui.graphics.PointMode.Points,
-                color = drawingPath.color,
-                strokeWidth = drawingPath.strokeWidth,
-                cap = StrokeCap.Round
-            )
-        }
-    }
+
 }

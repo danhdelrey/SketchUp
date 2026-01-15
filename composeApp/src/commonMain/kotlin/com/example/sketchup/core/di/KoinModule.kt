@@ -6,7 +6,7 @@ import org.koin.dsl.module
 
 
 val appModule = module {
-    // Single: Repo dùng chung cho toàn app (như yêu cầu)
+    // Single: Repo dùng chung cho toàn app
     single<DrawingRepository> { DrawingRepositoryImpl() }
 
     // Factory: Platform specific Image Saver
