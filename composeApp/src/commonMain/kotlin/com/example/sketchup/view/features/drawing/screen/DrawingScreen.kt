@@ -30,9 +30,9 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.koin.getScreenModel
+import cafe.adriel.voyager.koin.koinScreenModel
 import com.example.sketchup.view.common.component.CustomIconButton
-import com.example.sketchup.view.features.drawing.component.BrushSizePicker
+import com.example.sketchup.view.features.drawing.component.BrushSizeSlider
 import com.example.sketchup.view.features.drawing.event.DrawingEvent
 import com.example.sketchup.view.features.drawing.helper.drawPathCompat
 import com.example.sketchup.view.features.drawing.screenModel.DrawingScreenModel
@@ -42,9 +42,10 @@ class DrawingScreen : Screen {
     @Composable
     override fun Content() {
         // Inject ScreenModel bằng Koin qua Voyager
-        val screenModel = getScreenModel<DrawingScreenModel>()
+        val screenModel = koinScreenModel<DrawingScreenModel>()
         val state by screenModel.state.collectAsState()
         val scope = rememberCoroutineScope()
+        val brushSize by screenModel.currentBrushSize.collectAsState()
 
         // Tính năng mới của Compose 1.7+ để chụp ảnh màn hình
         val graphicsLayer = rememberGraphicsLayer()
@@ -101,10 +102,10 @@ class DrawingScreen : Screen {
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    BrushSizePicker(
-                        currentSize = state.brushSize,
-                        currentColor = state.selectedColor,
-                        onSizeSelected = { size ->
+                    BrushSizeSlider(
+                        color = state.selectedColor,
+                        size = brushSize,
+                        onSizeChange = { size ->
                             screenModel.onEvent(DrawingEvent.ChangeBrushSize(size))
                         }
                     )

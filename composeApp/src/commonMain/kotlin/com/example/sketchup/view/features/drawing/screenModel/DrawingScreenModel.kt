@@ -7,11 +7,11 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.example.sketchup.data.model.DrawingPath
 import com.example.sketchup.data.repository.DrawingRepository
-import com.example.sketchup.platform.ImageSaver
 import com.example.sketchup.view.features.drawing.event.DrawingEvent
 import com.example.sketchup.view.features.drawing.state.DrawingState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -27,19 +27,20 @@ class DrawingScreenModel(
     private val _currentPathPoints = MutableStateFlow<List<Offset>>(emptyList())
     private val _currentColor = MutableStateFlow(Color.Black)
     private val _currentWidth = MutableStateFlow(10f)
+    val currentBrushSize = _currentWidth.asStateFlow()
 
     // Kết hợp các luồng dữ liệu thành một State duy nhất cho UI
     val state = combine(
         repository.paths,
         _currentPathPoints,
-        _currentColor
+        _currentColor,
     ) { paths, currentPoints, color ->
         DrawingState(
             paths = paths,
             currentDrawingPath = if (currentPoints.isNotEmpty()) DrawingPath(
                 currentPoints,
                 color,
-                _currentWidth.value
+                _currentWidth.value,
             ) else null,
             selectedColor = color
         )
