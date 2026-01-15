@@ -7,5 +7,7 @@ data class DrawingState(
     val paths: List<DrawingPath> = emptyList(),
     val currentDrawingPath: DrawingPath? = null,
     val selectedColor: Color = Color.Black,
-    val brushSize: Float = 10f
+    val brushSize: Float = 10f,
+    val isEraseMode: Boolean = false,
+    val currentTouchPosition: androidx.compose.ui.geometry.Offset? = null
 )

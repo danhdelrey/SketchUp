@@ -1,5 +1,7 @@
 package com.example.sketchup.view.features.drawing.helper
 
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -17,20 +19,22 @@ fun DrawScope.drawPathCompat(drawingPath: DrawingPath) {
         }
         drawPath(
             path = path,
-            color = drawingPath.color,
+            color = if (drawingPath.isEraser) Color.Transparent else drawingPath.color,
             style = Stroke(
                 width = drawingPath.strokeWidth,
                 cap = StrokeCap.Round,
                 join = StrokeJoin.Round
-            )
+            ),
+            blendMode = if (drawingPath.isEraser) BlendMode.Clear else BlendMode.SrcOver
         )
     } else if (drawingPath.points.size == 1) {
         drawPoints(
             points = drawingPath.points,
             pointMode = androidx.compose.ui.graphics.PointMode.Points,
-            color = drawingPath.color,
+            color = if (drawingPath.isEraser) Color.Transparent else drawingPath.color,
             strokeWidth = drawingPath.strokeWidth,
-            cap = StrokeCap.Round
+            cap = StrokeCap.Round,
+            blendMode = if (drawingPath.isEraser) BlendMode.Clear else BlendMode.SrcOver
         )
     }
 }

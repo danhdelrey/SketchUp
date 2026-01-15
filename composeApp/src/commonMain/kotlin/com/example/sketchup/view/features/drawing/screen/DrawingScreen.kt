@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Redo
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -67,6 +71,7 @@ class DrawingScreen : Screen {
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
+                        .graphicsLayer(alpha = 0.99f) // Enable alpha compositing for BlendMode.Clear
                         .pointerInput(Unit) {
                             detectDragGestures(
                                 onDragStart = { screenModel.onEvent(DrawingEvent.StartDraw(it)) },
@@ -84,6 +89,16 @@ class DrawingScreen : Screen {
                     // Vẽ đường đang kéo (preview)
                     state.currentDrawingPath?.let { path ->
                         drawPathCompat(path)
+                    }
+
+                    // Vẽ vòng tròn chỉ thị vùng xóa khi ở chế độ erase và đang chạm
+                    if (state.isEraseMode && state.currentTouchPosition != null) {
+                        drawCircle(
+                            color = Color.Gray.copy(alpha = 0.5f),
+                            radius = brushSize / 2f,
+                            center = state.currentTouchPosition!!,
+                            style = Stroke(width = 2f)
+                        )
                     }
                 }
 
@@ -117,6 +132,13 @@ class DrawingScreen : Screen {
                         .align(Alignment.TopEnd)
                         .padding(10.dp)
                 ) {
+                    CustomIconButton(
+                        icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
+                    ) {
+                        screenModel.onEvent(DrawingEvent.ToggleEraseMode)
+                    }
+                    Spacer(Modifier.width(10.dp))
+
                     CustomIconButton(
                         icon = Icons.Default.Undo
                     ) {

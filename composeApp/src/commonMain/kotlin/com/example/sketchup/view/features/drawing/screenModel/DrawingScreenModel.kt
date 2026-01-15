@@ -27,6 +27,8 @@ class DrawingScreenModel(
     private val _currentPathPoints = MutableStateFlow<List<Offset>>(emptyList())
     private val _currentColor = MutableStateFlow(Color.Black)
     private val _currentWidth = MutableStateFlow(10f)
+    private val _isEraseMode = MutableStateFlow(false)
+    private val _currentTouchPosition = MutableStateFlow<Offset?>(null)
     val currentBrushSize = _currentWidth.asStateFlow()
 
     // Kết hợp các luồng dữ liệu thành một State duy nhất cho UI
@@ -34,15 +36,21 @@ class DrawingScreenModel(
         repository.paths,
         _currentPathPoints,
         _currentColor,
-    ) { paths, currentPoints, color ->
+        _isEraseMode,
+        _currentTouchPosition,
+    ) { paths, currentPoints, color, isEraseMode, touchPosition ->
         DrawingState(
             paths = paths,
             currentDrawingPath = if (currentPoints.isNotEmpty()) DrawingPath(
                 currentPoints,
                 color,
                 _currentWidth.value,
+                isEraser = isEraseMode
             ) else null,
-            selectedColor = color
+            selectedColor = color,
+            brushSize = _currentWidth.value,
+            isEraseMode = isEraseMode,
+            currentTouchPosition = touchPosition
         )
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DrawingState())
 
@@ -50,22 +58,31 @@ class DrawingScreenModel(
         when (event) {
             is DrawingEvent.StartDraw -> {
                 _currentPathPoints.update { listOf(event.offset) }
+                _currentTouchPosition.update { event.offset }
             }
             is DrawingEvent.UpdateDraw -> {
                 _currentPathPoints.update { it + event.offset }
+                _currentTouchPosition.update { event.offset }
             }
             is DrawingEvent.EndDraw -> {
                 val points = _currentPathPoints.value
                 if (points.isNotEmpty()) {
-                    repository.addPath(DrawingPath(points, _currentColor.value, _currentWidth.value))
+                    repository.addPath(DrawingPath(
+                        points,
+                        _currentColor.value,
+                        _currentWidth.value,
+                        isEraser = _isEraseMode.value
+                    ))
                     _currentPathPoints.update { emptyList() }
                 }
+                _currentTouchPosition.update { null }
             }
             is DrawingEvent.Undo -> repository.undo()
             is DrawingEvent.Redo -> repository.redo()
             is DrawingEvent.PickColor -> _currentColor.update { event.color }
             is DrawingEvent.ChangeBrushSize -> _currentWidth.update { event.size }
             is DrawingEvent.SavePng -> saveImage(event.bitmap)
+            is DrawingEvent.ToggleEraseMode -> _isEraseMode.update { !it }
         }
     }
 

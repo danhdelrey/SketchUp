@@ -6,5 +6,6 @@ import androidx.compose.ui.graphics.Color
 data class DrawingPath(
     val points: List<Offset>,
     val color: Color,
-    val strokeWidth: Float
+    val strokeWidth: Float,
+    val isEraser: Boolean = false
 )
