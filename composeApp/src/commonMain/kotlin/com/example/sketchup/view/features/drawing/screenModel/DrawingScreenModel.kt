@@ -20,13 +20,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
-
+/**
+ * ScreenModel for the Drawing screen.
+ * Manages drawing state, handles user events, and coordinates with repository and image saver.
+ */
 class DrawingScreenModel(
     private val repository: DrawingRepository,
     private val imageSaver: ImageSaver
 ) : ScreenModel {
 
-    // UI State kết hợp từ Repo và State cục bộ (màu hiện tại, nét vẽ đang kéo)
+    // UI State combined from Repository and local state (current color, current stroke)
     private val _currentPathPoints = MutableStateFlow<List<Offset>>(emptyList())
     private val _currentColor = MutableStateFlow(Color.Black)
     private val _currentWidth = MutableStateFlow(10f)
@@ -34,8 +37,8 @@ class DrawingScreenModel(
     private val _currentTouchPosition = MutableStateFlow<Offset?>(null)
     val currentBrushSize = _currentWidth.asStateFlow()
 
-    // 1. Tạo kênh giao tiếp để gửi thông báo ra UI (Side Effect)
-    // Channel.BUFFERED giúp giữ lại tin nhắn nếu UI chưa kịp nhận
+    // Channel for sending messages to UI (Side Effects)
+    // Channel.BUFFERED keeps messages if UI hasn't received them yet
     private val _messageChannel = Channel<String>(Channel.BUFFERED)
     val messageFlow = _messageChannel.receiveAsFlow()
 
@@ -96,22 +99,19 @@ class DrawingScreenModel(
 
     private fun saveImage(bytes: ByteArray) {
         screenModelScope.launch {
-            // 2. Thông báo bắt đầu lưu
-            _messageChannel.send("Đang lưu ảnh...")
+            // Notify user that save is in progress
+            _messageChannel.send("Saving image...")
 
             try {
-                // Giả lập độ trễ nhỏ để người dùng kịp đọc chữ "Đang lưu" (tuỳ chọn)
-                // kotlinx.coroutines.delay(500)
-
                 val success = imageSaver.saveImage(bytes, "sketch_${Clock.System.now().nanosecondsOfSecond}")
                 if (success) {
-                    _messageChannel.send("Lưu ảnh thành công! ✅")
+                    _messageChannel.send("Image saved successfully! ✅")
                 } else {
-                    _messageChannel.send("Lưu ảnh thất bại ❌")
+                    _messageChannel.send("Failed to save image ❌")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                _messageChannel.send("Lỗi: ${e.message}")
+                _messageChannel.send("Error: ${e.message}")
             }
         }
     }

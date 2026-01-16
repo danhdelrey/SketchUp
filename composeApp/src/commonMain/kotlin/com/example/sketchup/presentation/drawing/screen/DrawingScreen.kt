@@ -1,6 +1,5 @@
-package com.example.sketchup.view.features.drawing.screen
+package com.example.sketchup.presentation.drawing.screen
 
-import com.example.sketchup.view.features.drawing.component.ColorPicker
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -43,56 +42,61 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import com.example.sketchup.core.utils.toPngByteArray
-import com.example.sketchup.view.common.component.CustomIconButton
-import com.example.sketchup.view.features.drawing.component.BrushSizeSlider
-import com.example.sketchup.view.features.drawing.event.DrawingEvent
-import com.example.sketchup.view.features.drawing.helper.drawPathCompat
-import com.example.sketchup.view.features.drawing.screenModel.DrawingScreenModel
+import com.example.sketchup.presentation.drawing.DrawingScreenModel
+import com.example.sketchup.presentation.drawing.component.BrushSizeSlider
+import com.example.sketchup.presentation.drawing.component.ColorPicker
+import com.example.sketchup.presentation.drawing.helper.drawPathCompat
+import com.example.sketchup.presentation.drawing.model.DrawingEffect
+import com.example.sketchup.presentation.drawing.model.DrawingEvent
+import com.example.sketchup.presentation.common.component.CustomIconButton
 import kotlinx.coroutines.launch
 
+/**
+ * Main drawing screen using Clean Architecture.
+ * This screen is responsible only for UI rendering and user interaction.
+ */
 class DrawingScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        // Inject ScreenModel using Koin via Voyager
         val screenModel = koinScreenModel<DrawingScreenModel>()
         val state by screenModel.state.collectAsState()
         val brushSize by screenModel.currentBrushSize.collectAsState()
 
-        // Compose 1.7+ feature for capturing screen as image
         val graphicsLayer = rememberGraphicsLayer()
         val coroutineScope = rememberCoroutineScope()
 
-        // Snackbar state for showing messages
         val snackbarHostState = remember { SnackbarHostState() }
 
-        // Listen for messages from ScreenModel
+        // Handle side effects
         LaunchedEffect(Unit) {
-            screenModel.messageFlow.collect { message ->
-                // Show snackbar (suspends, queues if multiple messages)
-                snackbarHostState.showSnackbar(message)
+            screenModel.effectFlow.collect { effect ->
+                when (effect) {
+                    is DrawingEffect.ShowMessage -> {
+                        snackbarHostState.showSnackbar(effect.message)
+                    }
+                    is DrawingEffect.ShowError -> {
+                        snackbarHostState.showSnackbar("Error: ${effect.error}")
+                    }
+                }
             }
         }
-
-
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { padding ->
-            // Outer container that fills the screen with a gray background
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .background(Color(0xFFE0E0E0)), // Light gray background
+                    .background(Color(0xFFE0E0E0)),
                 contentAlignment = Alignment.Center
             ) {
-                // Fixed-size canvas container
+                // Canvas container
                 Box(
                     modifier = Modifier
-                        .size(800.dp, 600.dp) // Fixed canvas size: 800x600
+                        .size(800.dp, 600.dp)
                         .background(Color.White)
-                        // Gắn graphicsLayer vào container chứa Canvas
                         .drawWithContent {
                             graphicsLayer.record {
                                 this@drawWithContent.drawContent()
@@ -102,12 +106,11 @@ class DrawingScreen : Screen {
                 ) {
                     Canvas(
                         modifier = Modifier
-                            .size(800.dp, 600.dp) // Match the container size
-                            .graphicsLayer(alpha = 0.99f) // Enable alpha compositing for BlendMode.Clear
+                            .size(800.dp, 600.dp)
+                            .graphicsLayer(alpha = 0.99f)
                             .pointerInput(Unit) {
                                 detectDragGestures(
                                     onDragStart = { offset ->
-                                        // Clamp the offset to canvas bounds
                                         val clampedOffset = Offset(
                                             x = offset.x.coerceIn(0f, size.width.toFloat()),
                                             y = offset.y.coerceIn(0f, size.height.toFloat())
@@ -115,7 +118,6 @@ class DrawingScreen : Screen {
                                         screenModel.onEvent(DrawingEvent.StartDraw(clampedOffset))
                                     },
                                     onDrag = { change, _ ->
-                                        // Clamp the position to canvas bounds
                                         val clampedPosition = Offset(
                                             x = change.position.x.coerceIn(0f, size.width.toFloat()),
                                             y = change.position.y.coerceIn(0f, size.height.toFloat())
@@ -125,29 +127,30 @@ class DrawingScreen : Screen {
                                     onDragEnd = { screenModel.onEvent(DrawingEvent.EndDraw) }
                                 )
                             }
-                ) {
-                    // Draw saved paths
-                    state.paths.forEach { path ->
-                        drawPathCompat(path)
-                    }
-                    // Draw current path being drawn (preview)
-                    state.currentDrawingPath?.let { path ->
-                        drawPathCompat(path)
-                    }
+                    ) {
+                        // Draw saved paths
+                        state.paths.forEach { path ->
+                            drawPathCompat(path)
+                        }
 
-                    // Draw erase indicator circle when in erase mode and touching
-                    if (state.isEraseMode && state.currentTouchPosition != null) {
-                        drawCircle(
-                            color = Color.Gray.copy(alpha = 0.5f),
-                            radius = brushSize / 2f,
-                            center = state.currentTouchPosition!!,
-                            style = Stroke(width = 2f)
-                        )
-                    }
+                        // Draw current path being drawn
+                        state.currentDrawingPath?.let { path ->
+                            drawPathCompat(path)
+                        }
+
+                        // Draw erase indicator
+                        if (state.isEraseMode && state.currentTouchPosition != null) {
+                            drawCircle(
+                                color = Color.Gray.copy(alpha = 0.5f),
+                                radius = brushSize / 2f,
+                                center = state.currentTouchPosition!!,
+                                style = Stroke(width = 2f)
+                            )
+                        }
                     }
                 }
 
-                // Color and Brush Size Pickers at bottom left
+                // Color and Brush Size Pickers
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -171,47 +174,49 @@ class DrawingScreen : Screen {
                     )
                 }
 
-                // Undo/Redo buttons at top right
+                // Action buttons
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(10.dp)
                 ) {
                     CustomIconButton(
-                        icon = Icons.Default.Save
+                        icon = Icons.Default.Save,
+                        enabled = state.paths.isNotEmpty()
                     ) {
                         coroutineScope.launch {
                             try {
-                                // 1. Chụp ảnh từ graphicsLayer
                                 val bitmap = graphicsLayer.toImageBitmap()
-
-                                // 2. Chuyển thành ByteArray (dùng hàm tiện ích ở Bước 1)
                                 val bytes = bitmap.toPngByteArray()
-
-                                // 3. Gửi xuống ViewModel
                                 screenModel.onEvent(DrawingEvent.SavePng(bytes))
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
                         }
                     }
+
                     Spacer(Modifier.width(10.dp))
+
                     CustomIconButton(
                         icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
                     ) {
                         screenModel.onEvent(DrawingEvent.ToggleEraseMode)
                     }
+
                     Spacer(Modifier.width(10.dp))
 
                     CustomIconButton(
-                        icon = Icons.Default.Undo
+                        icon = Icons.Default.Undo,
+                        enabled = state.canUndo
                     ) {
                         screenModel.onEvent(DrawingEvent.Undo)
                     }
+
                     Spacer(Modifier.width(10.dp))
 
                     CustomIconButton(
-                        icon = Icons.Default.Redo
+                        icon = Icons.Default.Redo,
+                        enabled = state.canRedo
                     ) {
                         screenModel.onEvent(DrawingEvent.Redo)
                     }
@@ -219,6 +224,4 @@ class DrawingScreen : Screen {
             }
         }
     }
-
-
 }

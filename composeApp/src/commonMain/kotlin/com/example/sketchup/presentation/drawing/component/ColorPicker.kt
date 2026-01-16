@@ -1,4 +1,4 @@
-package com.example.sketchup.view.features.drawing.component
+package com.example.sketchup.presentation.drawing.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -49,7 +49,6 @@ fun ColorPicker(
     var currentColor by remember { mutableStateOf(initialColor) }
     var showDialog by remember { mutableStateOf(false) }
 
-    // Circular button showing current color
     Box(
         modifier = modifier
             .size(40.dp)
@@ -78,13 +77,11 @@ private fun GradientColorPickerDialog(
     onDismiss: () -> Unit,
     onColorConfirm: (Color) -> Unit
 ) {
-    // Convert initial color to HSV for cursor position initialization
     val hsv = remember { rgbToHsv(initialColor) }
-    var hue by remember { mutableStateOf(hsv[0]) }       // 0..360
-    var saturation by remember { mutableStateOf(hsv[1]) } // 0..1
-    var value by remember { mutableStateOf(hsv[2]) }      // 0..1
+    var hue by remember { mutableStateOf(hsv[0]) }
+    var saturation by remember { mutableStateOf(hsv[1]) }
+    var value by remember { mutableStateOf(hsv[2]) }
 
-    // Current color computed from H, S, V
     val currentColor = remember(hue, saturation, value) {
         Color.hsv(hue, saturation, value)
     }
@@ -94,7 +91,6 @@ private fun GradientColorPickerDialog(
         title = { Text("Pick Color") },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // 1. Saturation & Value panel (large square area)
                 SaturationValuePanel(
                     hue = hue,
                     saturation = saturation,
@@ -107,7 +103,6 @@ private fun GradientColorPickerDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. Hue bar (rainbow gradient)
                 HueBar(
                     hue = hue,
                     onHueChanged = { newHue ->
@@ -117,7 +112,6 @@ private fun GradientColorPickerDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Selected color preview
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Selected:")
                     Spacer(modifier = Modifier.width(8.dp))
@@ -151,23 +145,17 @@ private fun SaturationValuePanel(
     value: Float,
     onSatValChanged: (Float, Float) -> Unit
 ) {
-    val density = LocalDensity.current.density
-
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f) // Square shape
+            .aspectRatio(1f)
             .clip(RoundedCornerShape(4.dp))
             .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
     ) {
-        val width = maxWidth
-        val height = maxHeight
-
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                    // Handle tap and drag to get coordinates
                     detectTapGestures(
                         onPress = { offset ->
                             val s = (offset.x / size.width).coerceIn(0f, 1f)
@@ -184,28 +172,23 @@ private fun SaturationValuePanel(
                     }
                 }
         ) {
-            // Layer 1: Background color based on Hue
             drawRect(color = Color.hsv(hue, 1f, 1f))
 
-            // Layer 2: White -> Transparent gradient (Horizontal) - Saturation
             drawRect(
                 brush = Brush.horizontalGradient(
                     colors = listOf(Color.White, Color.Transparent)
                 )
             )
 
-            // Layer 3: Transparent -> Black gradient (Vertical) - Value/Brightness
             drawRect(
                 brush = Brush.verticalGradient(
                     colors = listOf(Color.Transparent, Color.Black)
                 )
             )
 
-            // Draw selector circle
             val selectorX = saturation * size.width
             val selectorY = (1f - value) * size.height
 
-            // White circle with black border for visibility on all backgrounds
             drawCircle(
                 color = Color.White,
                 radius = 8.dp.toPx(),
@@ -250,7 +233,6 @@ private fun HueBar(
                     }
                 }
         ) {
-            // Draw rainbow gradient
             val rainbowColors = listOf(
                 Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red
             )
@@ -258,7 +240,6 @@ private fun HueBar(
                 brush = Brush.horizontalGradient(rainbowColors)
             )
 
-            // Draw Hue position indicator
             val selectorX = (hue / 360f) * size.width
             drawLine(
                 color = Color.White,
@@ -270,16 +251,12 @@ private fun HueBar(
                 color = Color.Black,
                 start = Offset(selectorX, 0f),
                 end = Offset(selectorX, size.height),
-                strokeWidth = 1.dp.toPx() // Thin black border
+                strokeWidth = 1.dp.toPx()
             )
         }
     }
 }
 
-/**
- * Utility function: Converts RGB Color to HSV values.
- * Used because Color.toArgb() is not easily available in commonMain for calculations.
- */
 fun rgbToHsv(color: Color): FloatArray {
     val r = color.red
     val g = color.green

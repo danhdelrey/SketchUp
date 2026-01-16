@@ -1,63 +1,174 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Web.
+# SketchUp - Kotlin Multiplatform Drawing App
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+A cross-platform drawing application built with Kotlin Multiplatform (KMP) and Compose Multiplatform, demonstrating the real strengths of KMP architecture.
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+## 🎯 Supported Platforms
 
-### Build and Run Android Application
+- **Android** - Native Android app
+- **iOS** - Native iOS app via Compose Multiplatform
+- **Web** - WebAssembly (WASM) browser app
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+## 🏗️ Architecture
 
-### Build and Run Web Application
+This project demonstrates best practices for KMP development:
 
-To build and run the development version of the web app, use the run configuration from the run widget
-in your IDE's toolbar or run it directly from the terminal:
-- for the Wasm target (faster, modern browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-- for the JS target (slower, supports older browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:jsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
-    ```
+### Project Structure
 
-### Build and Run iOS Application
+```
+composeApp/src/
+├── commonMain/           # Shared code across all platforms
+│   └── kotlin/com/example/sketchup/
+│       ├── App.kt                    # Main Compose app entry
+│       ├── core/
+│       │   ├── di/                   # Dependency injection (Koin)
+│       │   │   └── KoinModule.kt     # Common DI module + expect declaration
+│       │   ├── theme/                # Material 3 theming
+│       │   └── utils/
+│       │       └── ImageUtils.kt     # expect fun for image processing
+│       ├── data/
+│       │   ├── model/                # Domain models
+│       │   └── repository/           # Data layer abstractions
+│       ├── platform/
+│       │   └── ImageSaver.kt         # Platform interface for saving images
+│       └── view/
+│           ├── common/component/     # Reusable UI components
+│           └── features/drawing/     # Drawing feature (MVI pattern)
+│               ├── component/        # Feature-specific components
+│               ├── event/            # UI events
+│               ├── helper/           # Extension functions
+│               ├── screen/           # Compose screens
+│               ├── screenModel/      # ViewModels (Voyager)
+│               └── state/            # UI state
+│
+├── androidMain/          # Android-specific implementations
+│   └── kotlin/com/example/sketchup/
+│       ├── core/
+│       │   ├── di/KoinModule.android.kt     # actual Koin module
+│       │   └── utils/ImageUtils.android.kt  # actual ImageBitmap->PNG
+│       ├── platform/
+│       │   └── AndroidImageSaver.kt         # MediaStore API
+│       ├── AndroidApp.kt
+│       └── MainActivity.kt
+│
+├── iosMain/              # iOS-specific implementations
+│   └── kotlin/com/example/sketchup/
+│       ├── core/
+│       │   ├── di/KoinModule.ios.kt        # actual Koin module
+│       │   └── utils/ImageUtils.ios.kt     # actual using Skia
+│       ├── platform/
+│       │   └── IosImageSaver.kt            # PHPhotoLibrary API
+│       └── MainViewController.kt
+│
+└── wasmJsMain/           # WebAssembly-specific implementations
+    └── kotlin/com/example/sketchup/
+        ├── core/
+        │   ├── di/KoinModule.wasmJs.kt     # actual Koin module
+        │   └── utils/ImageUtils.wasmJs.kt  # actual using Skia
+        └── platform/
+            └── WebImageSaver.kt            # Browser download API
+```
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+## 🔑 Key KMP Patterns Demonstrated
 
----
+### 1. Expect/Actual Declarations
+Platform-specific implementations with compile-time verification:
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
+```kotlin
+// commonMain: ImageUtils.kt
+expect fun ImageBitmap.toPngByteArray(): ByteArray
 
-We would appreciate your feedback on Compose/Web and Kotlin/Wasm in the public Slack channel [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web).
-If you face any issues, please report them on [YouTrack](https://youtrack.jetbrains.com/newIssue?project=CMP).
+// androidMain: ImageUtils.android.kt
+actual fun ImageBitmap.toPngByteArray(): ByteArray {
+    val androidBitmap = this.asAndroidBitmap()
+    // Android-specific bitmap processing
+}
+
+// iosMain: ImageUtils.ios.kt
+actual fun ImageBitmap.toPngByteArray(): ByteArray {
+    val skiaBitmap = this.asSkiaBitmap()
+    // Skia-based processing for iOS
+}
+```
+
+### 2. Interface-Based Platform Abstraction
+Clean separation with dependency injection:
+
+```kotlin
+// commonMain: ImageSaver.kt
+interface ImageSaver {
+    suspend fun saveImage(bytes: ByteArray, fileName: String): Boolean
+}
+
+// Platform implementations injected via Koin
+// Android: MediaStore API
+// iOS: PHPhotoLibrary
+// Web: Browser download
+```
+
+### 3. Shared UI with Compose Multiplatform
+100% shared UI code in `commonMain`:
+- Material 3 theming
+- Custom components (ColorPicker, BrushSizePicker)
+- Navigation with Voyager
+
+### 4. MVI Architecture Pattern
+Clean unidirectional data flow:
+- `DrawingState` - immutable UI state
+- `DrawingEvent` - sealed interface for user actions
+- `DrawingScreenModel` - processes events, updates state
+
+### 5. Dependency Injection with Koin
+Platform-aware DI setup:
+
+```kotlin
+// commonMain: shared modules + expect declaration
+expect val imageSaverModule: Module
+
+// Each platform provides actual implementation
+actual val imageSaverModule: Module = module {
+    single<ImageSaver> { PlatformImageSaver() }
+}
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- JDK 11+
+- Android Studio with KMP plugin
+- Xcode (for iOS builds)
+
+### Build & Run
+
+**Android:**
+```shell
+./gradlew :composeApp:assembleDebug
+```
+
+**iOS:**
+Open `iosApp/iosApp.xcodeproj` in Xcode and run.
+
+**Web (WASM):**
+```shell
+./gradlew :composeApp:wasmJsBrowserDevelopmentRun
+```
+
+## 📦 Dependencies
+
+- **Compose Multiplatform** - Shared UI framework
+- **Voyager** - Navigation & ScreenModel
+- **Koin** - Dependency injection
+- **Kotlinx Coroutines** - Async operations
+- **Skia** - Image processing (iOS, Web)
+
+## ✨ Features
+
+- 🎨 Freehand drawing with smooth paths
+- 🖌️ Customizable brush size and color
+- 🌈 Full color picker with HSV selection
+- ↩️ Undo/Redo support
+- 🧽 Eraser mode
+- 💾 Save drawings as PNG to device
+
+## 📄 License
+
+This project is open source and available under the MIT License.

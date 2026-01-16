@@ -80,13 +80,13 @@ private fun BrushSizeDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Chọn kích thước cọ") },
+        title = { Text("Select Brush Size") },
         text = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Preview của brush size
+                // Brush size preview
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -104,9 +104,9 @@ private fun BrushSizeDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Slider để chọn size
+                // Size selection slider
                 Text(
-                    text = "Kích thước: ${size.toInt()}px",
+                    text = "Size: ${size.toInt()}px",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
@@ -122,12 +122,12 @@ private fun BrushSizeDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSizeConfirm(size) }) {
-                Text("Xác nhận")
+                Text("Confirm")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Hủy")
+                Text("Cancel")
             }
         }
     )

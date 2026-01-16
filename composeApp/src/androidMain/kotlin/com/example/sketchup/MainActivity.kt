@@ -7,11 +7,15 @@ import com.example.sketchup.core.di.initKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.stopKoin
 
+/**
+ * Main entry point for the Android application.
+ * Initializes Koin DI and sets up Compose UI.
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Khởi tạo Koin và truyền Context vào
+        // Initialize Koin with Android Context
         initKoin {
             androidContext(applicationContext)
         }
@@ -23,7 +27,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Dọn dẹp Koin khi thoát app để tránh lỗi "A Koin Application has already been started" khi mở lại
+        // Clean up Koin when app exits to avoid "A Koin Application has already been started" error on reopen
         stopKoin()
     }
 }
