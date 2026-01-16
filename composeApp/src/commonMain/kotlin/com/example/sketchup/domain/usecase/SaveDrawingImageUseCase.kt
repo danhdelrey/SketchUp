@@ -1,7 +1,7 @@
 package com.example.sketchup.domain.usecase
 
 import com.example.sketchup.domain.repository.ImageStorageRepository
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Use case for saving a drawing as an image.

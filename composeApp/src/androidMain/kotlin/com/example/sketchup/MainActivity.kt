@@ -3,7 +3,7 @@ package com.example.sketchup
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.example.sketchup.core.di.initKoin
+import com.example.sketchup.di.initKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.stopKoin
 
