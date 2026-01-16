@@ -19,7 +19,7 @@ fun BrushSizeSlider(
     size: Float,
     onSizeChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    valueRange: ClosedFloatingPointRange<Float> = 1f..50f
+    valueRange: ClosedFloatingPointRange<Float> = 1f..100f
 ) {
     Row(
         modifier = modifier,
@@ -33,7 +33,8 @@ fun BrushSizeSlider(
             colors = SliderDefaults.colors(
                 activeTrackColor = color,
                 activeTickColor = color,
-                thumbColor = color
+                thumbColor = color,
+                inactiveTrackColor = MaterialTheme.colorScheme.surface
             )
         )
 
