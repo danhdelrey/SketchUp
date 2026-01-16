@@ -2,25 +2,28 @@ package com.example.sketchup.view.features.drawing.screenModel
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.example.sketchup.data.model.DrawingPath
 import com.example.sketchup.data.repository.DrawingRepository
+import com.example.sketchup.platform.ImageSaver
 import com.example.sketchup.view.features.drawing.event.DrawingEvent
 import com.example.sketchup.view.features.drawing.state.DrawingState
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 
 class DrawingScreenModel(
     private val repository: DrawingRepository,
-    //private val imageSaver: ImageSaver
+    private val imageSaver: ImageSaver
 ) : ScreenModel {
 
     // UI State kết hợp từ Repo và State cục bộ (màu hiện tại, nét vẽ đang kéo)
@@ -30,6 +33,11 @@ class DrawingScreenModel(
     private val _isEraseMode = MutableStateFlow(false)
     private val _currentTouchPosition = MutableStateFlow<Offset?>(null)
     val currentBrushSize = _currentWidth.asStateFlow()
+
+    // 1. Tạo kênh giao tiếp để gửi thông báo ra UI (Side Effect)
+    // Channel.BUFFERED giúp giữ lại tin nhắn nếu UI chưa kịp nhận
+    private val _messageChannel = Channel<String>(Channel.BUFFERED)
+    val messageFlow = _messageChannel.receiveAsFlow()
 
     // Kết hợp các luồng dữ liệu thành một State duy nhất cho UI
     val state = combine(
@@ -81,18 +89,29 @@ class DrawingScreenModel(
             is DrawingEvent.Redo -> repository.redo()
             is DrawingEvent.PickColor -> _currentColor.update { event.color }
             is DrawingEvent.ChangeBrushSize -> _currentWidth.update { event.size }
-            is DrawingEvent.SavePng -> saveImage(event.bitmap)
+            is DrawingEvent.SavePng -> saveImage(event.bytes)
             is DrawingEvent.ToggleEraseMode -> _isEraseMode.update { !it }
         }
     }
 
-    private fun saveImage(bitmap: ImageBitmap) {
+    private fun saveImage(bytes: ByteArray) {
         screenModelScope.launch {
+            // 2. Thông báo bắt đầu lưu
+            _messageChannel.send("Đang lưu ảnh...")
+
             try {
-                //imageSaver.saveImage(bitmap)
-                println("Image saved successfully")
+                // Giả lập độ trễ nhỏ để người dùng kịp đọc chữ "Đang lưu" (tuỳ chọn)
+                // kotlinx.coroutines.delay(500)
+
+                val success = imageSaver.saveImage(bytes, "sketch_${Clock.System.now().nanosecondsOfSecond}")
+                if (success) {
+                    _messageChannel.send("Lưu ảnh thành công! ✅")
+                } else {
+                    _messageChannel.send("Lưu ảnh thất bại ❌")
+                }
             } catch (e: Exception) {
-                println("Failed to save image: ${e.message}")
+                e.printStackTrace()
+                _messageChannel.send("Lỗi: ${e.message}")
             }
         }
     }

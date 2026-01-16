@@ -2,7 +2,6 @@ package com.example.sketchup.view.features.drawing.event
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 
 sealed interface DrawingEvent {
     data class StartDraw(val offset: Offset) : DrawingEvent
@@ -12,6 +11,7 @@ sealed interface DrawingEvent {
     data object Redo : DrawingEvent
     data class PickColor(val color: Color) : DrawingEvent
     data class ChangeBrushSize(val size: Float) : DrawingEvent
-    data class SavePng(val bitmap: ImageBitmap) : DrawingEvent
+    data class SavePng(val bytes: ByteArray) : DrawingEvent
     data object ToggleEraseMode : DrawingEvent
+
 }

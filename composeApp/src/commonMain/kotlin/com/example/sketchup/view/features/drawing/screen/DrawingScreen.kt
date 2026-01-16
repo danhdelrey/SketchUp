@@ -17,12 +17,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Redo
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -36,11 +42,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
+import com.example.sketchup.core.utils.toPngByteArray
 import com.example.sketchup.view.common.component.CustomIconButton
 import com.example.sketchup.view.features.drawing.component.BrushSizeSlider
 import com.example.sketchup.view.features.drawing.event.DrawingEvent
 import com.example.sketchup.view.features.drawing.helper.drawPathCompat
 import com.example.sketchup.view.features.drawing.screenModel.DrawingScreenModel
+import kotlinx.coroutines.launch
 
 class DrawingScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -53,8 +61,24 @@ class DrawingScreen : Screen {
 
         // Tính năng mới của Compose 1.7+ để chụp ảnh màn hình
         val graphicsLayer = rememberGraphicsLayer()
+        val coroutineScope = rememberCoroutineScope()
 
-        Scaffold { padding ->
+        // 1. Tạo State cho Snackbar
+        val snackbarHostState = remember { SnackbarHostState() }
+
+        // 2. Lắng nghe thông báo từ ViewModel
+        LaunchedEffect(Unit) {
+            screenModel.messageFlow.collect { message ->
+                // Hiển thị snackbar (hàm này suspend, nó sẽ xếp hàng nếu có nhiều tin nhắn)
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+
+
+
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+        ) { padding ->
             // Outer container that fills the screen with a gray background
             Box(
                 modifier = Modifier
@@ -153,6 +177,25 @@ class DrawingScreen : Screen {
                         .align(Alignment.TopEnd)
                         .padding(10.dp)
                 ) {
+                    CustomIconButton(
+                        icon = Icons.Default.Save
+                    ) {
+                        coroutineScope.launch {
+                            try {
+                                // 1. Chụp ảnh từ graphicsLayer
+                                val bitmap = graphicsLayer.toImageBitmap()
+
+                                // 2. Chuyển thành ByteArray (dùng hàm tiện ích ở Bước 1)
+                                val bytes = bitmap.toPngByteArray()
+
+                                // 3. Gửi xuống ViewModel
+                                screenModel.onEvent(DrawingEvent.SavePng(bytes))
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                    Spacer(Modifier.width(10.dp))
                     CustomIconButton(
                         icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
                     ) {
