@@ -27,12 +27,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.sketchup.domain.model.Brush
 
+/**
+ * Brush size picker component
+ * Now uses domain model for better separation of concerns
+ */
 @Composable
 fun BrushSizePicker(
     modifier: Modifier = Modifier,
-    currentSize: Float = 10f,
-    currentColor: Color = Color.Black,
+    brush: Brush = Brush.DEFAULT,
     onSizeSelected: (Float) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
@@ -50,16 +54,15 @@ fun BrushSizePicker(
         // Preview dot với kích thước hiện tại
         Canvas(modifier = Modifier.size(40.dp)) {
             drawCircle(
-                color = currentColor,
-                radius = (currentSize / 2).coerceIn(2f, 15f)
+                color = brush.color.copy(alpha = brush.opacity),
+                radius = (brush.size / 2).coerceIn(2f, 15f)
             )
         }
     }
 
     if (showDialog) {
         BrushSizeDialog(
-            initialSize = currentSize,
-            currentColor = currentColor,
+            brush = brush,
             onDismiss = { showDialog = false },
             onSizeConfirm = { selectedSize ->
                 onSizeSelected(selectedSize)
@@ -71,12 +74,11 @@ fun BrushSizePicker(
 
 @Composable
 private fun BrushSizeDialog(
-    initialSize: Float,
-    currentColor: Color,
+    brush: Brush,
     onDismiss: () -> Unit,
     onSizeConfirm: (Float) -> Unit
 ) {
-    var size by remember { mutableStateOf(initialSize) }
+    var size by remember { mutableStateOf(brush.size) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -96,7 +98,7 @@ private fun BrushSizeDialog(
                 ) {
                     Canvas(modifier = Modifier.size(60.dp)) {
                         drawCircle(
-                            color = currentColor,
+                            color = brush.color.copy(alpha = brush.opacity),
                             radius = size / 2
                         )
                     }
