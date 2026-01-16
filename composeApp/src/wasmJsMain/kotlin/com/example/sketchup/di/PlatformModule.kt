@@ -1,7 +1,7 @@
 package com.example.sketchup.di
 
+import WebImageStorageDataSource
 import com.example.sketchup.data.source.local.ImageStorageDataSource
-import com.example.sketchup.platform.WebImageStorageDataSource
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
