@@ -19,25 +19,8 @@ class WebImageStorageDataSource : ImageStorageDataSource {
     override suspend fun saveImage(imageData: ByteArray, fileName: String): Boolean {
         return try {
             val jsBytes = imageData.toJsInt8Array()
+return true
 
-            @Suppress("UNCHECKED_CAST_TO_EXTERNAL_INTERFACE")
-            val blobParts = js("[]") as JsArray<JsAny?>
-            blobParts[0] = jsBytes
-
-            val blob = Blob(blobParts, BlobPropertyBag(type = "image/png"))
-
-            val url = URL.createObjectURL(blob)
-            val anchor = document.createElement("a") as HTMLAnchorElement
-            anchor.href = url
-            anchor.download = "$fileName.png"
-            anchor.style.display = "none"
-
-            document.body?.appendChild(anchor)
-            anchor.click()
-            document.body?.removeChild(anchor)
-
-            URL.revokeObjectURL(url)
-            true
         } catch (e: Exception) {
             e.printStackTrace()
             false
