@@ -16,5 +16,5 @@ data class DrawingState(
     val isEraseMode: Boolean = false,
     val currentTouchPosition: Offset? = null,
     val canUndo: Boolean = false,
-    val canRedo: Boolean = false
+    val canRedo: Boolean = false,
 )

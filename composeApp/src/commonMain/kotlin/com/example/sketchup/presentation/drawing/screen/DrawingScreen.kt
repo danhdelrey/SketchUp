@@ -49,6 +49,7 @@ import com.example.sketchup.presentation.drawing.helper.drawPathCompat
 import com.example.sketchup.presentation.drawing.model.DrawingEffect
 import com.example.sketchup.presentation.drawing.model.DrawingEvent
 import com.example.sketchup.presentation.common.component.CustomIconButton
+import com.example.sketchup.presentation.common.component.LoadingOverlay
 import kotlinx.coroutines.launch
 
 /**
@@ -62,6 +63,7 @@ class DrawingScreen : Screen {
         val screenModel = koinScreenModel<DrawingScreenModel>()
         val state by screenModel.state.collectAsState()
         val brushSize by screenModel.currentBrushSize.collectAsState()
+        val isLoading by screenModel.isLoading.collectAsState()
 
         val graphicsLayer = rememberGraphicsLayer()
         val coroutineScope = rememberCoroutineScope()
@@ -85,142 +87,156 @@ class DrawingScreen : Screen {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .background(Color(0xFFE0E0E0)),
-                contentAlignment = Alignment.Center
-            ) {
-                // Canvas container
+            Box {
+
                 Box(
                     modifier = Modifier
-                        .size(800.dp, 600.dp)
-                        .background(Color.White)
-                        .drawWithContent {
-                            graphicsLayer.record {
-                                this@drawWithContent.drawContent()
-                            }
-                            drawLayer(graphicsLayer)
-                        }
+                        .fillMaxSize()
+                        .padding(padding)
+                        .background(Color(0xFFE0E0E0)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Canvas(
+                    // Canvas container
+                    Box(
                         modifier = Modifier
                             .size(800.dp, 600.dp)
-                            .graphicsLayer(alpha = 0.99f)
-                            .pointerInput(Unit) {
-                                detectDragGestures(
-                                    onDragStart = { offset ->
-                                        val clampedOffset = Offset(
-                                            x = offset.x.coerceIn(0f, size.width.toFloat()),
-                                            y = offset.y.coerceIn(0f, size.height.toFloat())
-                                        )
-                                        screenModel.onEvent(DrawingEvent.StartDraw(clampedOffset))
-                                    },
-                                    onDrag = { change, _ ->
-                                        val clampedPosition = Offset(
-                                            x = change.position.x.coerceIn(0f, size.width.toFloat()),
-                                            y = change.position.y.coerceIn(0f, size.height.toFloat())
-                                        )
-                                        screenModel.onEvent(DrawingEvent.UpdateDraw(clampedPosition))
-                                    },
-                                    onDragEnd = { screenModel.onEvent(DrawingEvent.EndDraw) }
+                            .background(Color.White)
+                            .drawWithContent {
+                                graphicsLayer.record {
+                                    this@drawWithContent.drawContent()
+                                }
+                                drawLayer(graphicsLayer)
+                            }
+                    ) {
+                        Canvas(
+                            modifier = Modifier
+                                .size(800.dp, 600.dp)
+                                .graphicsLayer(alpha = 0.99f)
+                                .pointerInput(Unit) {
+                                    detectDragGestures(
+                                        onDragStart = { offset ->
+                                            val clampedOffset = Offset(
+                                                x = offset.x.coerceIn(0f, size.width.toFloat()),
+                                                y = offset.y.coerceIn(0f, size.height.toFloat())
+                                            )
+                                            screenModel.onEvent(DrawingEvent.StartDraw(clampedOffset))
+                                        },
+                                        onDrag = { change, _ ->
+                                            val clampedPosition = Offset(
+                                                x = change.position.x.coerceIn(
+                                                    0f,
+                                                    size.width.toFloat()
+                                                ),
+                                                y = change.position.y.coerceIn(
+                                                    0f,
+                                                    size.height.toFloat()
+                                                )
+                                            )
+                                            screenModel.onEvent(
+                                                DrawingEvent.UpdateDraw(
+                                                    clampedPosition
+                                                )
+                                            )
+                                        },
+                                        onDragEnd = { screenModel.onEvent(DrawingEvent.EndDraw) }
+                                    )
+                                }
+                        ) {
+                            // Draw saved paths
+                            state.paths.forEach { path ->
+                                drawPathCompat(path)
+                            }
+
+                            // Draw current path being drawn
+                            state.currentDrawingPath?.let { path ->
+                                drawPathCompat(path)
+                            }
+
+                            // Draw erase indicator
+                            if (state.isEraseMode && state.currentTouchPosition != null) {
+                                drawCircle(
+                                    color = Color.Gray.copy(alpha = 0.5f),
+                                    radius = brushSize / 2f,
+                                    center = state.currentTouchPosition!!,
+                                    style = Stroke(width = 2f)
                                 )
                             }
-                    ) {
-                        // Draw saved paths
-                        state.paths.forEach { path ->
-                            drawPathCompat(path)
-                        }
-
-                        // Draw current path being drawn
-                        state.currentDrawingPath?.let { path ->
-                            drawPathCompat(path)
-                        }
-
-                        // Draw erase indicator
-                        if (state.isEraseMode && state.currentTouchPosition != null) {
-                            drawCircle(
-                                color = Color.Gray.copy(alpha = 0.5f),
-                                radius = brushSize / 2f,
-                                center = state.currentTouchPosition!!,
-                                style = Stroke(width = 2f)
-                            )
                         }
                     }
-                }
 
-                // Color and Brush Size Pickers
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(10.dp)
-                ) {
-                    ColorPicker(
-                        initialColor = state.selectedColor,
-                        onColorSelected = { color ->
-                            screenModel.onEvent(DrawingEvent.PickColor(color))
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    BrushSizeSlider(
-                        color = state.selectedColor,
-                        size = brushSize,
-                        onSizeChange = { size ->
-                            screenModel.onEvent(DrawingEvent.ChangeBrushSize(size))
-                        }
-                    )
-                }
-
-                // Action buttons
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(10.dp)
-                ) {
-                    CustomIconButton(
-                        icon = Icons.Default.Save,
-                        enabled = state.paths.isNotEmpty()
+                    // Color and Brush Size Pickers
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(10.dp)
                     ) {
-                        coroutineScope.launch {
-                            try {
-                                val bitmap = graphicsLayer.toImageBitmap()
-                                val bytes = bitmap.toPngByteArray()
-                                screenModel.onEvent(DrawingEvent.SavePng(bytes))
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+                        ColorPicker(
+                            initialColor = state.selectedColor,
+                            onColorSelected = { color ->
+                                screenModel.onEvent(DrawingEvent.PickColor(color))
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        BrushSizeSlider(
+                            color = state.selectedColor,
+                            size = brushSize,
+                            onSizeChange = { size ->
+                                screenModel.onEvent(DrawingEvent.ChangeBrushSize(size))
+                            }
+                        )
+                    }
+
+                    // Action buttons
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(10.dp)
+                    ) {
+                        CustomIconButton(
+                            icon = Icons.Default.Save,
+                            enabled = state.paths.isNotEmpty()
+                        ) {
+                            coroutineScope.launch {
+                                try {
+                                    val bitmap = graphicsLayer.toImageBitmap()
+                                    val bytes = bitmap.toPngByteArray()
+                                    screenModel.onEvent(DrawingEvent.SavePng(bytes))
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
                             }
                         }
-                    }
 
-                    Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(10.dp))
 
-                    CustomIconButton(
-                        icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
-                    ) {
-                        screenModel.onEvent(DrawingEvent.ToggleEraseMode)
-                    }
+                        CustomIconButton(
+                            icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
+                        ) {
+                            screenModel.onEvent(DrawingEvent.ToggleEraseMode)
+                        }
 
-                    Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(10.dp))
 
-                    CustomIconButton(
-                        icon = Icons.Default.Undo,
-                        enabled = state.canUndo
-                    ) {
-                        screenModel.onEvent(DrawingEvent.Undo)
-                    }
+                        CustomIconButton(
+                            icon = Icons.Default.Undo,
+                            enabled = state.canUndo
+                        ) {
+                            screenModel.onEvent(DrawingEvent.Undo)
+                        }
 
-                    Spacer(Modifier.width(10.dp))
+                        Spacer(Modifier.width(10.dp))
 
-                    CustomIconButton(
-                        icon = Icons.Default.Redo,
-                        enabled = state.canRedo
-                    ) {
-                        screenModel.onEvent(DrawingEvent.Redo)
+                        CustomIconButton(
+                            icon = Icons.Default.Redo,
+                            enabled = state.canRedo
+                        ) {
+                            screenModel.onEvent(DrawingEvent.Redo)
+                        }
                     }
                 }
+                LoadingOverlay(isLoading = isLoading)
             }
         }
     }

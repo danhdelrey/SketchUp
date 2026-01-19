@@ -11,6 +11,7 @@ import com.example.sketchup.presentation.drawing.model.DrawingEffect
 import com.example.sketchup.presentation.drawing.model.DrawingEvent
 import com.example.sketchup.presentation.drawing.model.DrawingState
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +53,10 @@ class DrawingScreenModel(
     // Side effects channel
     private val _effectChannel = Channel<DrawingEffect>(Channel.BUFFERED)
     val effectFlow = _effectChannel.receiveAsFlow()
+
+    //loading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
 
     // Combined UI state
     val state = combine(
@@ -159,14 +164,17 @@ class DrawingScreenModel(
     private fun handleSaveImage(bytes: ByteArray) {
         screenModelScope.launch {
             sendEffect(DrawingEffect.ShowMessage("Saving image..."))
+            _isLoading.value = true
 
             val result = saveDrawingImageUseCase(bytes)
 
             result.fold(
                 onSuccess = { message ->
+                    _isLoading.value = false
                     sendEffect(DrawingEffect.ShowMessage(message))
                 },
                 onFailure = { error ->
+                    _isLoading.value = false
                     sendEffect(DrawingEffect.ShowError(error.message ?: "Failed to save image"))
                 }
             )
