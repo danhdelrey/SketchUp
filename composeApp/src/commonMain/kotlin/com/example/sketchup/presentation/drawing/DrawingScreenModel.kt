@@ -43,6 +43,7 @@ class DrawingScreenModel(
     // Local UI state
     private val _currentPathPoints = MutableStateFlow<List<Offset>>(emptyList())
     private val _currentColor = MutableStateFlow(Color.Black)
+    private val _currentOpacity = MutableStateFlow(1f)
     private val _currentWidth = MutableStateFlow(10f)
     private val _isEraseMode = MutableStateFlow(false)
     private val _currentTouchPosition = MutableStateFlow<Offset?>(null)
@@ -66,6 +67,7 @@ class DrawingScreenModel(
         _currentWidth,
         _isEraseMode,
         _currentTouchPosition,
+        _currentOpacity,
     ) { flows ->
         val paths = flows[0] as List<DrawingPath>
         val currentPoints = flows[1] as List<Offset>
@@ -73,6 +75,7 @@ class DrawingScreenModel(
         val width = flows[3] as Float
         val isEraseMode = flows[4] as Boolean
         val touchPosition = flows[5] as Offset?
+        val opacity = flows[6] as Float
 
         DrawingState(
             paths = paths,
@@ -81,7 +84,8 @@ class DrawingScreenModel(
                     points = currentPoints,
                     color = color,
                     strokeWidth = width,
-                    isEraser = isEraseMode
+                    isEraser = isEraseMode,
+                    opacity = opacity
                 )
             } else null,
             selectedColor = color,
@@ -89,7 +93,8 @@ class DrawingScreenModel(
             isEraseMode = isEraseMode,
             currentTouchPosition = touchPosition,
             canUndo = drawingRepository.canUndo(),
-            canRedo = drawingRepository.canRedo()
+            canRedo = drawingRepository.canRedo(),
+            currentOpacity = opacity
         )
     }.stateIn(
         scope = screenModelScope,
@@ -108,11 +113,16 @@ class DrawingScreenModel(
             is DrawingEvent.Undo -> undoDrawingUseCase()
             is DrawingEvent.Redo -> redoDrawingUseCase()
             is DrawingEvent.PickColor -> handlePickColor(event.color)
+            is DrawingEvent.ChangeOpacity -> handleChangeOpacity(event.opacity)
             is DrawingEvent.ChangeBrushSize -> handleChangeBrushSize(event.size)
             is DrawingEvent.SavePng -> handleSaveImage(event.bytes)
             is DrawingEvent.ToggleEraseMode -> handleToggleEraseMode()
             is DrawingEvent.Clear -> handleClear()
         }
+    }
+
+    private fun handleChangeOpacity(opacity: Float) {
+        _currentOpacity.update { opacity }
     }
 
     private fun handleStartDraw(offset: Offset) {
@@ -132,7 +142,8 @@ class DrawingScreenModel(
                 points = points,
                 color = _currentColor.value,
                 strokeWidth = _currentWidth.value,
-                isEraser = _isEraseMode.value
+                isEraser = _isEraseMode.value,
+                opacity = _currentOpacity.value
             )
             addDrawingPathUseCase(path)
             _currentPathPoints.update { emptyList() }

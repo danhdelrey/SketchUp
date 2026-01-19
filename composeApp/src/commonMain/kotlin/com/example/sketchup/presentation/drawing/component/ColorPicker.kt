@@ -42,6 +42,7 @@ import kotlin.math.min
 
 @Composable
 fun ColorPicker(
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     initialColor: Color = Color.Black,
     onColorSelected: (Color) -> Unit
@@ -49,14 +50,17 @@ fun ColorPicker(
     var currentColor by remember { mutableStateOf(initialColor) }
     var showDialog by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(currentColor)
-            .border(width = 2.dp, color = Color.Gray, shape = CircleShape)
-            .clickable { showDialog = true }
-    )
+    if(enabled){
+        Box(
+            modifier = modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(currentColor)
+                .border(width = 2.dp, color = Color.Gray, shape = CircleShape)
+                .clickable { showDialog = true }
+        )
+    }
+
 
     if (showDialog) {
         GradientColorPickerDialog(

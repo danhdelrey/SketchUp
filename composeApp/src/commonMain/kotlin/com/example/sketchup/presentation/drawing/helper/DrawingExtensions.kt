@@ -2,6 +2,8 @@ package com.example.sketchup.presentation.drawing.helper
 
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -14,7 +16,7 @@ import com.example.sketchup.domain.model.DrawingPath
  */
 fun DrawScope.drawPathCompat(drawingPath: DrawingPath) {
     if (drawingPath.points.size > 1) {
-        val path = androidx.compose.ui.graphics.Path().apply {
+        val path = Path().apply {
             moveTo(drawingPath.points.first().x, drawingPath.points.first().y)
             for (i in 1 until drawingPath.points.size) {
                 lineTo(drawingPath.points[i].x, drawingPath.points[i].y)
@@ -28,14 +30,16 @@ fun DrawScope.drawPathCompat(drawingPath: DrawingPath) {
                 cap = StrokeCap.Round,
                 join = StrokeJoin.Round
             ),
+            alpha = drawingPath.opacity,
             blendMode = if (drawingPath.isEraser) BlendMode.Clear else BlendMode.SrcOver
         )
     } else if (drawingPath.points.size == 1) {
         drawPoints(
             points = drawingPath.points,
-            pointMode = androidx.compose.ui.graphics.PointMode.Points,
+            pointMode = PointMode.Points,
             color = if (drawingPath.isEraser) Color.Transparent else drawingPath.color,
             strokeWidth = drawingPath.strokeWidth,
+            alpha = drawingPath.opacity,
             cap = StrokeCap.Round,
             blendMode = if (drawingPath.isEraser) BlendMode.Clear else BlendMode.SrcOver
         )

@@ -17,4 +17,5 @@ data class DrawingState(
     val currentTouchPosition: Offset? = null,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
+    val currentOpacity: Float = 1f
 )

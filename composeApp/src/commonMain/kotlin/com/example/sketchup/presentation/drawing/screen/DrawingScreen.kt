@@ -50,6 +50,7 @@ import com.example.sketchup.presentation.drawing.model.DrawingEffect
 import com.example.sketchup.presentation.drawing.model.DrawingEvent
 import com.example.sketchup.presentation.common.component.CustomIconButton
 import com.example.sketchup.presentation.common.component.LoadingOverlay
+import com.example.sketchup.presentation.drawing.component.OpacitySlider
 import kotlinx.coroutines.launch
 
 /**
@@ -170,15 +171,6 @@ class DrawingScreen : Screen {
                             .align(Alignment.BottomStart)
                             .padding(10.dp)
                     ) {
-                        ColorPicker(
-                            initialColor = state.selectedColor,
-                            onColorSelected = { color ->
-                                screenModel.onEvent(DrawingEvent.PickColor(color))
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
                         BrushSizeSlider(
                             color = state.selectedColor,
                             size = brushSize,
@@ -186,6 +178,37 @@ class DrawingScreen : Screen {
                                 screenModel.onEvent(DrawingEvent.ChangeBrushSize(size))
                             }
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OpacitySlider(
+                            color = state.selectedColor,
+                            opacity = state.currentOpacity,
+                            onOpacityChange = { opacity ->
+                                screenModel.onEvent(DrawingEvent.ChangeOpacity(opacity))
+                            }
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CustomIconButton(
+                                icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
+                            ) {
+                                screenModel.onEvent(DrawingEvent.ToggleEraseMode)
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            ColorPicker(
+                                enabled = !state.isEraseMode,
+                                initialColor = state.selectedColor,
+                                onColorSelected = { color ->
+                                    screenModel.onEvent(DrawingEvent.PickColor(color))
+                                }
+                            )
+
+
+                        }
+
+
+
                     }
 
                     // Action buttons
@@ -207,14 +230,6 @@ class DrawingScreen : Screen {
                                     e.printStackTrace()
                                 }
                             }
-                        }
-
-                        Spacer(Modifier.width(10.dp))
-
-                        CustomIconButton(
-                            icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
-                        ) {
-                            screenModel.onEvent(DrawingEvent.ToggleEraseMode)
                         }
 
                         Spacer(Modifier.width(10.dp))
