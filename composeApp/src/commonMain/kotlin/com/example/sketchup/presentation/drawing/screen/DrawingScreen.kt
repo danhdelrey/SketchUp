@@ -3,6 +3,7 @@ package com.example.sketchup.presentation.drawing.screen
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -166,46 +167,46 @@ class DrawingScreen : Screen {
                     }
 
                     // Color and Brush Size Pickers
-                    Column(
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(10.dp)
-                    ) {
-                        BrushSizeSlider(
-                            color = state.selectedColor,
-                            size = brushSize,
-                            onSizeChange = { size ->
-                                screenModel.onEvent(DrawingEvent.ChangeBrushSize(size))
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OpacitySlider(
-                            color = state.selectedColor,
-                            opacity = state.currentOpacity,
-                            onOpacityChange = { opacity ->
-                                screenModel.onEvent(DrawingEvent.ChangeOpacity(opacity))
-                            }
-                        )
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CustomIconButton(
+                            icon = if (!state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
                         ) {
-                            CustomIconButton(
-                                icon = if (state.isEraseMode) Icons.Default.Create else Icons.Default.Delete
-                            ) {
-                                screenModel.onEvent(DrawingEvent.ToggleEraseMode)
+                            screenModel.onEvent(DrawingEvent.ToggleEraseMode)
+                        }
+                        ColorPicker(
+                            enabled = !state.isEraseMode,
+                            initialColor = state.selectedColor,
+                            onColorSelected = { color ->
+                                screenModel.onEvent(DrawingEvent.PickColor(color))
                             }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            ColorPicker(
+                        )
+                        Column {
+                            BrushSizeSlider(
+                                modifier = Modifier.height(30.dp),
+                                size = brushSize,
+                                onSizeChange = { size ->
+                                    screenModel.onEvent(DrawingEvent.ChangeBrushSize(size))
+                                },
+                            )
+                            OpacitySlider(
+                                modifier = Modifier.height(30.dp),
                                 enabled = !state.isEraseMode,
-                                initialColor = state.selectedColor,
-                                onColorSelected = { color ->
-                                    screenModel.onEvent(DrawingEvent.PickColor(color))
+                                color = state.selectedColor,
+                                opacity = state.currentOpacity,
+                                onOpacityChange = { opacity ->
+                                    screenModel.onEvent(DrawingEvent.ChangeOpacity(opacity))
                                 }
                             )
-
-
                         }
+
+
 
 
 
